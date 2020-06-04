@@ -11,8 +11,7 @@ namespace SphericalGeometry
         {
             // We need to check if perpendicular falls on path, it is performed only
             // if two of angles in triangle is sharp. If one of the angles > 90
-            // we take as our distance min between our point and distances to
-            // path ends.
+            // we take as our distance min distance between our point and path ends.
 
             var crossTrackDistance = CrossTrackDistance(pathStart, pathEnd, point);
 
