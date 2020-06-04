@@ -28,7 +28,6 @@ namespace SphericalGeometry
 
         public static double CrossTrackDistance(GeoCoordinate pathStart, GeoCoordinate pathEnd, GeoCoordinate point)
         {
-
             var δ13 = DistanceBetweenPoints(pathStart, point) / R;
             var θ13 = DegreesToRadians(InitialBearingBetweenPoints(pathStart, point));
             var θ12 = DegreesToRadians(InitialBearingBetweenPoints(pathStart, pathEnd));
