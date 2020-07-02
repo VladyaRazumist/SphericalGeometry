@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace SphericalGeometry
@@ -6,6 +8,57 @@ namespace SphericalGeometry
     class SphericalGeometry
     {
         private const double R = 6371;
+
+        public static double CalculatePolygonArea(IReadOnlyCollection<GeoCoordinate> coordinates)
+        {
+            var coords = new List<GeoCoordinate>();
+            coords.AddRange(coordinates);
+            coords.Add(coords[0]);
+            const double R = 6371e3;
+
+            var nVertices = coords.Count - 1;
+            var S = 0.0; // spherical excess in steradians
+
+            for (var v = 0; v < nVertices; v++)
+            {
+                var φ1 = DegreesToRadians(coords[v].Latitude);
+                var φ2 = DegreesToRadians(coords[v + 1].Latitude);
+                var Δλ = DegreesToRadians(coords[v + 1].Longitude - coords[v].Longitude);
+                var E = 2 * Math.Atan2(Math.Tan(Δλ / 2) * (Math.Tan(φ1 / 2) + Math.Tan(φ2 / 2)),
+                            1 + Math.Tan(φ1 / 2) * Math.Tan(φ2 / 2));
+                S += E;
+            }
+
+            if (IsPoleEnclosedBy(coords))
+                S = Math.Abs(S) - 2 * Math.PI;
+
+            var A = Math.Abs(S * R * R); // area in units of R
+
+            return A;
+        }
+
+        private static bool IsPoleEnclosedBy(IReadOnlyCollection<GeoCoordinate> coords)
+        {
+            var p = coords.ToArray();
+            var ΣΔ = 0.0;
+            var initBrng = 0.0;
+            var prevBrng = InitialBearingBetweenPoints(p[0], p[1]);
+
+            for (var v = 0; v < p.Length - 1; v++)
+            {
+                initBrng = InitialBearingBetweenPoints(p[v], p[v + 1]);
+                var finalBrng = FinalBearingBetweenPoints(p[v], p[v + 1]);
+                ΣΔ += (initBrng - prevBrng + 540) % 360 - 180;
+                ΣΔ += (finalBrng - initBrng + 540) % 360 - 180;
+                prevBrng = finalBrng;
+            }
+
+            initBrng = InitialBearingBetweenPoints(p[0], p[1]);
+            ΣΔ += (initBrng - prevBrng + 540) % 360 - 180;
+            var enclosed = Math.Abs(ΣΔ) < 90; // 0°-ish
+            return enclosed;
+        }
+
 
         public static double DistanceToLineSegment(GeoCoordinate pathStart, GeoCoordinate pathEnd, GeoCoordinate point)
         {
@@ -73,6 +126,12 @@ namespace SphericalGeometry
 
             var bearing = RadiansToDegrees(θ);
 
+            return Wrap360(bearing);
+        }
+
+        public static double FinalBearingBetweenPoints(GeoCoordinate point1, GeoCoordinate point2)
+        {
+            var bearing = InitialBearingBetweenPoints(point1, point2) + 180;
             return Wrap360(bearing);
         }
 
